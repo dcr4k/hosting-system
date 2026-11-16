@@ -1,0 +1,356 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 180 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerifiedAdminEmail() {
+      return isSignedIn() &&
+        request.auth.token.email == 'digit4lkey@gmail.com' &&
+        request.auth.token.email_verified == true;
+    }
+
+    function isPlatformAdmin() {
+      return isVerifiedAdminEmail() || (
+        isSignedIn() &&
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'platform_admin'
+      );
+    }
+
+    function isValidTenant(data) {
+      return data.keys().hasAll([
+        'id', 'slug', 'name', 'category', 'status', 'plan',
+        'ownerUid', 'primaryColor', 'checkInTime', 'checkOutTime', 'createdAt'
+      ]) &&
+      data.keys().hasOnly([
+        'id', 'slug', 'name', 'category', 'status', 'plan',
+        'ownerUid', 'ownerEmail', 'ownerPassword', 'primaryColor', 'themeVariant', 'logoUrl', 'heroImageUrl',
+        'tagline', 'description', 'phone', 'whatsapp', 'email',
+        'address', 'city', 'state', 'checkInTime', 'checkOutTime',
+        'cancellationPolicy', 'houseRules', 'isDemo', 'createdAt'
+      ]) &&
+      data.id is string && data.id.size() <= 128 &&
+      data.slug is string && data.slug.size() <= 80 &&
+      data.name is string && data.name.size() <= 140 &&
+      data.category in ['hotel', 'pousada', 'hostel', 'resort'] &&
+      data.status in ['active', 'suspended', 'onboarding'] &&
+      data.plan in ['starter', 'pro', 'enterprise'] &&
+      data.ownerUid is string && data.ownerUid.size() <= 128 &&
+      data.primaryColor is string && data.primaryColor.size() <= 32 &&
+      (!('themeVariant' in data) || data.themeVariant in ['classic_light', 'resort_tint', 'boutique_dark']) &&
+      data.checkInTime is string && data.checkInTime.size() <= 16 &&
+      data.checkOutTime is string && data.checkOutTime.size() <= 16 &&
+      data.createdAt is string && data.createdAt.size() <= 64;
+    }
+
+    function isValidUserProfile(data) {
+      return data.keys().hasAll(['uid', 'email', 'displayName', 'role', 'tenantId', 'createdAt']) &&
+      data.keys().hasOnly(['uid', 'email', 'displayName', 'role', 'tenantId', 'createdAt']) &&
+      data.uid is string && data.uid.size() <= 128 &&
+      data.email is string && data.email.size() <= 160 &&
+      data.displayName is string && data.displayName.size() <= 140 &&
+      data.role in ['platform_admin', 'tenant_owner', 'tenant_manager', 'tenant_staff', 'guest'] &&
+      data.tenantId is string && data.tenantId.size() <= 128 &&
+      data.createdAt is string && data.createdAt.size() <= 64;
+    }
+
+    function isValidAccommodation(data) {
+      return data.keys().hasAll([
+        'id', 'tenantId', 'name', 'type', 'pricingMode',
+        'basePrice', 'capacity', 'bedsCount', 'active', 'createdAt'
+      ]) &&
+      data.keys().hasOnly([
+        'id', 'tenantId', 'name', 'type', 'pricingMode',
+        'basePrice', 'weekendPrice', 'capacity', 'bedsCount',
+        'description', 'amenities', 'imageUrl', 'rules', 'active', 'createdAt'
+      ]) &&
+      data.id is string && data.id.size() <= 128 &&
+      data.tenantId is string && data.tenantId.size() <= 128 &&
+      data.name is string && data.name.size() <= 140 &&
+      data.type in ['private_room', 'single_room', 'double_room', 'family_room', 'shared_dorm', 'female_dorm', 'male_dorm', 'mixed_dorm'] &&
+      data.pricingMode in ['per_room', 'per_person', 'per_bed', 'per_night'] &&
+      data.basePrice is number && data.basePrice >= 0 &&
+      data.capacity is number && data.capacity >= 1 &&
+      data.bedsCount is number && data.bedsCount >= 1 &&
+      data.active is bool &&
+      data.createdAt is string && data.createdAt.size() <= 64;
+    }
+
+    function isValidUnit(data) {
+      return data.keys().hasAll(['id', 'tenantId', 'accommodationId', 'label', 'unitType', 'status', 'createdAt']) &&
+      data.keys().hasOnly(['id', 'tenantId', 'accommodationId', 'label', 'unitType', 'status', 'createdAt']) &&
+      data.id is string && data.id.size() <= 128 &&
+      data.tenantId is string && data.tenantId.size() <= 128 &&
+      data.accommodationId is string && data.accommodationId.size() <= 128 &&
+      data.label is string && data.label.size() <= 80 &&
+      data.unitType in ['room', 'bed'] &&
+      data.status in ['active', 'maintenance'] &&
+      data.createdAt is string && data.createdAt.size() <= 64;
+    }
+
+    function isValidAvailability(data) {
+      return data.keys().hasAll(['id', 'tenantId', 'accommodationId', 'unitId', 'date', 'status', 'updatedAt']) &&
+      data.keys().hasOnly([
+        'id', 'tenantId', 'accommodationId', 'unitId', 'date',
+        'status', 'customPrice', 'reservationId', 'blockReason', 'expiresAt', 'updatedAt'
+      ]) &&
+      data.id is string && data.id.size() <= 180 &&
+      data.tenantId is string && data.tenantId.size() <= 128 &&
+      data.accommodationId is string && data.accommodationId.size() <= 128 &&
+      data.unitId is string && data.unitId.size() <= 128 &&
+      data.date is string && data.date.size() == 10 && data.date.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$') &&
+      data.status in ['available', 'occupied', 'blocked', 'held'] &&
+      data.updatedAt is string && data.updatedAt.size() <= 64;
+    }
+
+    function isValidRatePlan(data) {
+      return data.keys().hasAll([
+        'id', 'tenantId', 'accommodationId', 'name', 'ruleType',
+        'startDate', 'endDate', 'priceModifierType', 'value', 'priority', 'active', 'createdAt'
+      ]) &&
+      data.keys().hasOnly([
+        'id', 'tenantId', 'accommodationId', 'name', 'ruleType',
+        'startDate', 'endDate', 'priceModifierType', 'value', 'priority', 'active', 'createdAt'
+      ]) &&
+      data.id is string && data.id.size() <= 128 &&
+      data.tenantId is string && data.tenantId.size() <= 128 &&
+      data.accommodationId is string && data.accommodationId.size() <= 128 &&
+      data.name is string && data.name.size() <= 140 &&
+      data.ruleType in ['special_period', 'holiday', 'high_season', 'low_season', 'weekend', 'promotion'] &&
+      data.startDate is string && data.startDate.size() <= 10 &&
+      data.endDate is string && data.endDate.size() <= 10 &&
+      data.priceModifierType in ['fixed', 'percentage_increase', 'percentage_discount'] &&
+      data.value is number && data.value >= 0 &&
+      data.priority is number &&
+      data.active is bool &&
+      data.createdAt is string && data.createdAt.size() <= 64;
+    }
+
+    function isValidReservation(data) {
+      return data.keys().hasAll([
+        'id', 'code', 'tenantId', 'accommodationId', 'accommodationName',
+        'unitIdsCsv', 'unitLabelsCsv', 'guestId', 'guestName', 'guestEmail',
+        'guestPhone', 'checkIn', 'checkOut', 'nights', 'guestsCount',
+        'totalAmount', 'paidAmount', 'paymentMethod', 'paymentModality',
+        'status', 'idempotencyKey', 'isSimulatedPayment', 'createdAt'
+      ]) &&
+      data.keys().hasOnly([
+        'id', 'code', 'tenantId', 'accommodationId', 'accommodationName',
+        'unitIdsCsv', 'unitLabelsCsv', 'guestId', 'guestName', 'guestEmail',
+        'guestPhone', 'checkIn', 'checkOut', 'nights', 'guestsCount',
+        'totalAmount', 'paidAmount', 'paymentMethod', 'paymentModality',
+        'status', 'idempotencyKey', 'isSimulatedPayment', 'notes', 'createdAt'
+      ]) &&
+      data.id is string && data.id.size() <= 128 &&
+      data.code is string && data.code.size() <= 32 &&
+      data.tenantId is string && data.tenantId.size() <= 128 &&
+      data.accommodationId is string && data.accommodationId.size() <= 128 &&
+      data.accommodationName is string && data.accommodationName.size() <= 140 &&
+      data.unitIdsCsv is string && data.unitIdsCsv.size() <= 600 &&
+      data.unitLabelsCsv is string && data.unitLabelsCsv.size() <= 600 &&
+      data.guestId is string && data.guestId.size() <= 128 &&
+      data.guestName is string && data.guestName.size() <= 140 &&
+      data.guestEmail is string && data.guestEmail.size() <= 160 &&
+      data.guestPhone is string && data.guestPhone.size() <= 40 &&
+      data.checkIn is string && data.checkIn.size() <= 10 &&
+      data.checkOut is string && data.checkOut.size() <= 10 &&
+      data.nights is number && data.nights >= 1 &&
+      data.guestsCount is number && data.guestsCount >= 1 &&
+      data.totalAmount is number && data.totalAmount >= 0 &&
+      data.paidAmount is number && data.paidAmount >= 0 &&
+      data.paymentMethod in ['pix', 'credit_card', 'pay_at_property'] &&
+      data.paymentModality in ['full', 'partial'] &&
+      data.status in ['pending_payment', 'pending_confirmation', 'confirmed', 'cancelled', 'checked_in', 'checked_out', 'expired'] &&
+      data.idempotencyKey is string && data.idempotencyKey.size() <= 128 &&
+      data.isSimulatedPayment is bool &&
+      data.createdAt is string && data.createdAt.size() <= 64;
+    }
+
+    function isValidGuest(data) {
+      return data.keys().hasAll([
+        'id', 'tenantId', 'fullName', 'email', 'phone', 'lgpdConsent', 'staysCount', 'createdAt'
+      ]) &&
+      data.keys().hasOnly([
+        'id', 'tenantId', 'fullName', 'email', 'phone', 'documentNumber', 'city', 'lgpdConsent', 'staysCount', 'createdAt'
+      ]) &&
+      data.id is string && data.id.size() <= 128 &&
+      data.tenantId is string && data.tenantId.size() <= 128 &&
+      data.fullName is string && data.fullName.size() <= 140 &&
+      data.email is string && data.email.size() <= 160 &&
+      data.phone is string && data.phone.size() <= 40 &&
+      data.lgpdConsent is bool &&
+      data.staysCount is number && data.staysCount >= 0 &&
+      data.createdAt is string && data.createdAt.size() <= 64;
+    }
+
+    function isValidPayment(data) {
+      return data.keys().hasAll([
+        'id', 'tenantId', 'reservationId', 'reservationCode',
+        'amount', 'method', 'modality', 'status', 'externalRef', 'isSimulated', 'createdAt'
+      ]) &&
+      data.keys().hasOnly([
+        'id', 'tenantId', 'reservationId', 'reservationCode',
+        'amount', 'method', 'modality', 'status', 'externalRef', 'isSimulated', 'createdAt'
+      ]) &&
+      data.id is string && data.id.size() <= 128 &&
+      data.tenantId is string && data.tenantId.size() <= 128 &&
+      data.reservationId is string && data.reservationId.size() <= 128 &&
+      data.reservationCode is string && data.reservationCode.size() <= 32 &&
+      data.amount is number && data.amount >= 0 &&
+      data.method in ['pix', 'credit_card', 'pay_at_property'] &&
+      data.modality in ['full', 'partial'] &&
+      data.status in ['pending', 'paid', 'refunded', 'failed'] &&
+      data.externalRef is string && data.externalRef.size() <= 128 &&
+      data.isSimulated is bool &&
+      data.createdAt is string && data.createdAt.size() <= 64;
+    }
+
+    function isValidAuditLog(data) {
+      return data.keys().hasAll([
+        'id', 'tenantId', 'actorUid', 'actorEmail', 'action', 'targetType', 'targetId', 'details', 'createdAt'
+      ]) &&
+      data.keys().hasOnly([
+        'id', 'tenantId', 'actorUid', 'actorEmail', 'action', 'targetType', 'targetId', 'details', 'createdAt'
+      ]) &&
+      data.id is string && data.id.size() <= 128 &&
+      data.tenantId is string && data.tenantId.size() <= 128 &&
+      data.actorUid is string && data.actorUid.size() <= 128 &&
+      data.actorEmail is string && data.actorEmail.size() <= 160 &&
+      data.action is string && data.action.size() <= 120 &&
+      data.targetType is string && data.targetType.size() <= 60 &&
+      data.targetId is string && data.targetId.size() <= 128 &&
+      data.details is string && data.details.size() <= 1000 &&
+      data.createdAt is string && data.createdAt.size() <= 64;
+    }
+
+    match /test/{docId} {
+      allow get: if isValidId(docId);
+    }
+
+    // EXCLUSIVIDADE DO ADMINISTRADOR GERAL (isPlatformAdmin) PARA REGISTRAR, SUSPENDER/DESATIVAR E REMOVER ESTABELECIMENTOS
+    match /tenants/{tenantId} {
+      allow get: if isValidId(tenantId);
+      allow list: if resource.data.status in ['active', 'suspended', 'onboarding'];
+      allow create: if isValidId(tenantId) && isValidTenant(incoming()) && isPlatformAdmin();
+      allow update: if isValidId(tenantId) && isValidTenant(incoming()) && incoming().id == existing().id && (
+        isPlatformAdmin() || (
+          incoming().status == existing().status &&
+          incoming().plan == existing().plan &&
+          incoming().ownerUid == existing().ownerUid &&
+          incoming().slug == existing().slug
+        )
+      );
+      allow delete: if isValidId(tenantId) && isPlatformAdmin();
+    }
+
+    match /users/{userId} {
+      allow get: if isValidId(userId) && (
+        (isSignedIn() && request.auth.uid == userId) || isPlatformAdmin()
+      );
+      allow list: if isPlatformAdmin() || (isSignedIn() && resource.data.uid == request.auth.uid);
+      allow create: if isValidId(userId) && isValidUserProfile(incoming()) && (
+        isPlatformAdmin() || (
+          isSignedIn() &&
+          request.auth.uid == userId &&
+          (incoming().role != 'platform_admin' || isVerifiedAdminEmail())
+        )
+      );
+      allow update: if isValidId(userId) && isValidUserProfile(incoming()) && incoming().uid == existing().uid && (
+        isPlatformAdmin() || (
+          isSignedIn() &&
+          request.auth.uid == userId &&
+          incoming().role == existing().role
+        )
+      );
+      allow delete: if isValidId(userId) && isPlatformAdmin();
+    }
+
+    match /accommodations/{accommodationId} {
+      allow get: if isValidId(accommodationId);
+      allow list: if resource.data.tenantId is string;
+      allow create: if isValidId(accommodationId) && isValidAccommodation(incoming());
+      allow update: if isValidId(accommodationId) && isValidAccommodation(incoming()) &&
+        incoming().tenantId == existing().tenantId;
+      allow delete: if isValidId(accommodationId);
+    }
+
+    match /units/{unitId} {
+      allow get: if isValidId(unitId);
+      allow list: if resource.data.tenantId is string;
+      allow create: if isValidId(unitId) && isValidUnit(incoming());
+      allow update: if isValidId(unitId) && isValidUnit(incoming()) &&
+        incoming().tenantId == existing().tenantId;
+      allow delete: if isValidId(unitId);
+    }
+
+    match /availability/{slotId} {
+      allow get: if isValidId(slotId);
+      allow list: if resource.data.tenantId is string;
+      allow create: if isValidId(slotId) && isValidAvailability(incoming());
+      allow update: if isValidId(slotId) && isValidAvailability(incoming()) && incoming().tenantId == existing().tenantId;
+      allow delete: if isValidId(slotId);
+    }
+
+    match /rate_plans/{ratePlanId} {
+      allow get: if isValidId(ratePlanId);
+      allow list: if resource.data.tenantId is string;
+      allow create: if isValidId(ratePlanId) && isValidRatePlan(incoming());
+      allow update: if isValidId(ratePlanId) && isValidRatePlan(incoming()) &&
+        incoming().tenantId == existing().tenantId;
+      allow delete: if isValidId(ratePlanId);
+    }
+
+    match /reservations/{reservationId} {
+      allow get: if isValidId(reservationId);
+      allow list: if resource.data.tenantId is string;
+      allow create: if isValidId(reservationId) && isValidReservation(incoming());
+      allow update: if isValidId(reservationId) && isValidReservation(incoming()) &&
+        incoming().tenantId == existing().tenantId;
+      allow delete: if isValidId(reservationId);
+    }
+
+    match /guests/{guestId} {
+      allow get: if isValidId(guestId);
+      allow list: if resource.data.tenantId is string;
+      allow create: if isValidId(guestId) && isValidGuest(incoming()) && incoming().lgpdConsent == true;
+      allow update: if isValidId(guestId) && isValidGuest(incoming()) &&
+        incoming().tenantId == existing().tenantId;
+      allow delete: if isValidId(guestId);
+    }
+
+    match /payments/{paymentId} {
+      allow get: if isValidId(paymentId);
+      allow list: if resource.data.tenantId is string;
+      allow create: if isValidId(paymentId) && isValidPayment(incoming());
+      allow update: if isValidId(paymentId) && isValidPayment(incoming()) &&
+        incoming().tenantId == existing().tenantId;
+      allow delete: if isValidId(paymentId);
+    }
+
+    match /audit_logs/{logId} {
+      allow get: if isValidId(logId);
+      allow list: if resource.data.tenantId is string;
+      allow create: if isValidId(logId) && isValidAuditLog(incoming());
+      allow update: if false;
+      allow delete: if isValidId(logId) && isPlatformAdmin();
+    }
+  }
+}

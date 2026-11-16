@@ -1,0 +1,272 @@
+{
+  "entities": {
+    "Tenant": {
+      "title": "Tenant",
+      "description": "Estabelecimento cadastrado na plataforma SaaS multi-tenant (Hotel, Pousada ou Hostel)",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "slug": { "type": "string", "maxLength": 80, "pattern": "^[a-z0-9\\-]+$" },
+        "name": { "type": "string", "maxLength": 140 },
+        "category": { "type": "string", "enum": ["hotel", "pousada", "hostel", "resort"] },
+        "status": { "type": "string", "enum": ["active", "suspended", "onboarding"] },
+        "plan": { "type": "string", "enum": ["starter", "pro", "enterprise"] },
+        "ownerUid": { "type": "string", "maxLength": 128 },
+        "ownerEmail": { "type": "string", "maxLength": 160 },
+        "primaryColor": { "type": "string", "maxLength": 32 },
+        "themeVariant": { "type": "string", "enum": ["classic_light", "resort_tint", "boutique_dark"] },
+        "logoUrl": { "type": "string", "maxLength": 500 },
+        "heroImageUrl": { "type": "string", "maxLength": 500 },
+        "tagline": { "type": "string", "maxLength": 240 },
+        "description": { "type": "string", "maxLength": 2000 },
+        "phone": { "type": "string", "maxLength": 40 },
+        "whatsapp": { "type": "string", "maxLength": 40 },
+        "email": { "type": "string", "maxLength": 160 },
+        "address": { "type": "string", "maxLength": 300 },
+        "city": { "type": "string", "maxLength": 100 },
+        "state": { "type": "string", "maxLength": 50 },
+        "checkInTime": { "type": "string", "maxLength": 16 },
+        "checkOutTime": { "type": "string", "maxLength": 16 },
+        "cancellationPolicy": { "type": "string", "maxLength": 1200 },
+        "houseRules": { "type": "string", "maxLength": 1200 },
+        "isDemo": { "type": "boolean" },
+        "createdAt": { "type": "string", "maxLength": 64 }
+      },
+      "required": ["id", "slug", "name", "category", "status", "plan", "ownerUid", "primaryColor", "checkInTime", "checkOutTime", "createdAt"]
+    },
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "Perfil de usuário autenticado com função RBAC e associação a tenant",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "maxLength": 128 },
+        "email": { "type": "string", "maxLength": 160 },
+        "displayName": { "type": "string", "maxLength": 140 },
+        "role": { "type": "string", "enum": ["platform_admin", "tenant_owner", "tenant_manager", "tenant_staff", "guest"] },
+        "tenantId": { "type": "string", "maxLength": 128 },
+        "createdAt": { "type": "string", "maxLength": 64 }
+      },
+      "required": ["uid", "email", "displayName", "role", "tenantId", "createdAt"]
+    },
+    "Accommodation": {
+      "title": "Accommodation",
+      "description": "Categoria de acomodação (Quarto privativo, Casal, Familiar ou Dormitório compartilhado)",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "tenantId": { "type": "string", "maxLength": 128 },
+        "name": { "type": "string", "maxLength": 140 },
+        "type": {
+          "type": "string",
+          "enum": ["private_room", "single_room", "double_room", "family_room", "shared_dorm", "female_dorm", "male_dorm", "mixed_dorm"]
+        },
+        "pricingMode": {
+          "type": "string",
+          "enum": ["per_room", "per_person", "per_bed", "per_night"]
+        },
+        "basePrice": { "type": "number" },
+        "weekendPrice": { "type": "number" },
+        "capacity": { "type": "number" },
+        "bedsCount": { "type": "number" },
+        "description": { "type": "string", "maxLength": 2000 },
+        "amenities": { "type": "string", "maxLength": 1000 },
+        "imageUrl": { "type": "string", "maxLength": 500 },
+        "rules": { "type": "string", "maxLength": 800 },
+        "active": { "type": "boolean" },
+        "createdAt": { "type": "string", "maxLength": 64 }
+      },
+      "required": ["id", "tenantId", "name", "type", "pricingMode", "basePrice", "capacity", "bedsCount", "active", "createdAt"]
+    },
+    "ReservableUnit": {
+      "title": "ReservableUnit",
+      "description": "Unidade física reservável (Quarto numerado ou Cama individual de dormitório)",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "tenantId": { "type": "string", "maxLength": 128 },
+        "accommodationId": { "type": "string", "maxLength": 128 },
+        "label": { "type": "string", "maxLength": 80 },
+        "unitType": { "type": "string", "enum": ["room", "bed"] },
+        "status": { "type": "string", "enum": ["active", "maintenance"] },
+        "createdAt": { "type": "string", "maxLength": 64 }
+      },
+      "required": ["id", "tenantId", "accommodationId", "label", "unitType", "status", "createdAt"]
+    },
+    "AvailabilitySlot": {
+      "title": "AvailabilitySlot",
+      "description": "Controle diário de disponibilidade, tarifa e bloqueio por unidade e data",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 180 },
+        "tenantId": { "type": "string", "maxLength": 128 },
+        "accommodationId": { "type": "string", "maxLength": 128 },
+        "unitId": { "type": "string", "maxLength": 128 },
+        "date": { "type": "string", "maxLength": 10, "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$" },
+        "status": { "type": "string", "enum": ["available", "occupied", "blocked", "held"] },
+        "customPrice": { "type": "number" },
+        "reservationId": { "type": "string", "maxLength": 128 },
+        "blockReason": { "type": "string", "maxLength": 240 },
+        "expiresAt": { "type": "string", "maxLength": 64 },
+        "updatedAt": { "type": "string", "maxLength": 64 }
+      },
+      "required": ["id", "tenantId", "accommodationId", "unitId", "date", "status", "updatedAt"]
+    },
+    "RatePlan": {
+      "title": "RatePlan",
+      "description": "Regra inteligente de tarifa sazonal, feriado, fim de semana ou promoção",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "tenantId": { "type": "string", "maxLength": 128 },
+        "accommodationId": { "type": "string", "maxLength": 128 },
+        "name": { "type": "string", "maxLength": 140 },
+        "ruleType": { "type": "string", "enum": ["special_period", "holiday", "high_season", "low_season", "weekend", "promotion"] },
+        "startDate": { "type": "string", "maxLength": 10 },
+        "endDate": { "type": "string", "maxLength": 10 },
+        "priceModifierType": { "type": "string", "enum": ["fixed", "percentage_increase", "percentage_discount"] },
+        "value": { "type": "number" },
+        "priority": { "type": "number" },
+        "active": { "type": "boolean" },
+        "createdAt": { "type": "string", "maxLength": 64 }
+      },
+      "required": ["id", "tenantId", "accommodationId", "name", "ruleType", "startDate", "endDate", "priceModifierType", "value", "priority", "active", "createdAt"]
+    },
+    "Reservation": {
+      "title": "Reservation",
+      "description": "Reserva de hospedagem com controle transacional de unidades e status",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "code": { "type": "string", "maxLength": 32 },
+        "tenantId": { "type": "string", "maxLength": 128 },
+        "accommodationId": { "type": "string", "maxLength": 128 },
+        "accommodationName": { "type": "string", "maxLength": 140 },
+        "unitIdsCsv": { "type": "string", "maxLength": 600 },
+        "unitLabelsCsv": { "type": "string", "maxLength": 600 },
+        "guestId": { "type": "string", "maxLength": 128 },
+        "guestName": { "type": "string", "maxLength": 140 },
+        "guestEmail": { "type": "string", "maxLength": 160 },
+        "guestPhone": { "type": "string", "maxLength": 40 },
+        "checkIn": { "type": "string", "maxLength": 10 },
+        "checkOut": { "type": "string", "maxLength": 10 },
+        "nights": { "type": "number" },
+        "guestsCount": { "type": "number" },
+        "totalAmount": { "type": "number" },
+        "paidAmount": { "type": "number" },
+        "paymentMethod": { "type": "string", "enum": ["pix", "credit_card", "pay_at_property"] },
+        "paymentModality": { "type": "string", "enum": ["full", "partial"] },
+        "status": {
+          "type": "string",
+          "enum": ["pending_payment", "pending_confirmation", "confirmed", "cancelled", "checked_in", "checked_out", "expired"]
+        },
+        "idempotencyKey": { "type": "string", "maxLength": 128 },
+        "isSimulatedPayment": { "type": "boolean" },
+        "notes": { "type": "string", "maxLength": 1000 },
+        "createdAt": { "type": "string", "maxLength": 64 }
+      },
+      "required": [
+        "id", "code", "tenantId", "accommodationId", "accommodationName",
+        "unitIdsCsv", "unitLabelsCsv", "guestId", "guestName", "guestEmail",
+        "guestPhone", "checkIn", "checkOut", "nights", "guestsCount",
+        "totalAmount", "paidAmount", "paymentMethod", "paymentModality",
+        "status", "idempotencyKey", "isSimulatedPayment", "createdAt"
+      ]
+    },
+    "GuestRecord": {
+      "title": "GuestRecord",
+      "description": "Cadastro de hóspede isolado por tenant com consentimento LGPD",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "tenantId": { "type": "string", "maxLength": 128 },
+        "fullName": { "type": "string", "maxLength": 140 },
+        "email": { "type": "string", "maxLength": 160 },
+        "phone": { "type": "string", "maxLength": 40 },
+        "documentNumber": { "type": "string", "maxLength": 40 },
+        "city": { "type": "string", "maxLength": 100 },
+        "lgpdConsent": { "type": "boolean" },
+        "staysCount": { "type": "number" },
+        "createdAt": { "type": "string", "maxLength": 64 }
+      },
+      "required": ["id", "tenantId", "fullName", "email", "phone", "lgpdConsent", "staysCount", "createdAt"]
+    },
+    "PaymentRecord": {
+      "title": "PaymentRecord",
+      "description": "Transação financeira associada a uma reserva",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "tenantId": { "type": "string", "maxLength": 128 },
+        "reservationId": { "type": "string", "maxLength": 128 },
+        "reservationCode": { "type": "string", "maxLength": 32 },
+        "amount": { "type": "number" },
+        "method": { "type": "string", "enum": ["pix", "credit_card", "pay_at_property"] },
+        "modality": { "type": "string", "enum": ["full", "partial"] },
+        "status": { "type": "string", "enum": ["pending", "paid", "refunded", "failed"] },
+        "externalRef": { "type": "string", "maxLength": 128 },
+        "isSimulated": { "type": "boolean" },
+        "createdAt": { "type": "string", "maxLength": 64 }
+      },
+      "required": ["id", "tenantId", "reservationId", "reservationCode", "amount", "method", "modality", "status", "externalRef", "isSimulated", "createdAt"]
+    },
+    "AuditLog": {
+      "title": "AuditLog",
+      "description": "Registro imutável de auditoria administrativa e operacional",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "tenantId": { "type": "string", "maxLength": 128 },
+        "actorUid": { "type": "string", "maxLength": 128 },
+        "actorEmail": { "type": "string", "maxLength": 160 },
+        "action": { "type": "string", "maxLength": 120 },
+        "targetType": { "type": "string", "maxLength": 60 },
+        "targetId": { "type": "string", "maxLength": 128 },
+        "details": { "type": "string", "maxLength": 1000 },
+        "createdAt": { "type": "string", "maxLength": 64 }
+      },
+      "required": ["id", "tenantId", "actorUid", "actorEmail", "action", "targetType", "targetId", "details", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/tenants/{tenantId}": {
+      "schema": { "$ref": "#/entities/Tenant" },
+      "description": "Estabelecimentos cadastrados no SaaS"
+    },
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserProfile" },
+      "description": "Perfis e funções RBAC dos usuários"
+    },
+    "/accommodations/{accommodationId}": {
+      "schema": { "$ref": "#/entities/Accommodation" },
+      "description": "Catálogo de acomodações por tenant"
+    },
+    "/units/{unitId}": {
+      "schema": { "$ref": "#/entities/ReservableUnit" },
+      "description": "Unidades reserváveis individuais (quartos e camas)"
+    },
+    "/availability/{slotId}": {
+      "schema": { "$ref": "#/entities/AvailabilitySlot" },
+      "description": "Slots diários de ocupação e tarifa por unidade"
+    },
+    "/rate_plans/{ratePlanId}": {
+      "schema": { "$ref": "#/entities/RatePlan" },
+      "description": "Regras de precificação sazonal e promocional"
+    },
+    "/reservations/{reservationId}": {
+      "schema": { "$ref": "#/entities/Reservation" },
+      "description": "Reservas realizadas nos estabelecimentos"
+    },
+    "/guests/{guestId}": {
+      "schema": { "$ref": "#/entities/GuestRecord" },
+      "description": "Cadastro de hóspedes por estabelecimento"
+    },
+    "/payments/{paymentId}": {
+      "schema": { "$ref": "#/entities/PaymentRecord" },
+      "description": "Pagamentos vinculados às reservas"
+    },
+    "/audit_logs/{logId}": {
+      "schema": { "$ref": "#/entities/AuditLog" },
+      "description": "Trilha de auditoria administrativa"
+    }
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "name": "Digit4lKey StayOS — Plataforma SaaS Multi-Tenant de Reservas e Hospedagem",
+  "description": "Plataforma SaaS multiestabelecimento para gestão de hotéis, pousadas e hostels com motor de disponibilidade por unidade e cama, portal público personalizável e arquitetura Firebase.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
