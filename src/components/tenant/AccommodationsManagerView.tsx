@@ -34,6 +34,11 @@ import {
   sortUnitsNaturally,
   suggestNextNumberInTenant,
 } from '../../utils/unitNumbering';
+import {calculateTenantMediaUsage} from '../../utils/imageOptimizer';
+import {
+  CloudQuotaUsageBar,
+  RoomPhotosGalleryUploader,
+} from '../common/CloudMediaUploader';
 import {ResilientImage} from '../common/ResilientImage';
 
 interface AccommodationsManagerViewProps {
@@ -68,10 +73,18 @@ export const AccommodationsManagerView: React.FC<
     'Ar-Condicionado, Wi-Fi 6, Café da Manhã, Enxoval Premium'
   );
   const [imageUrl, setImageUrl] = useState(DEMO_IMAGES.masterSuite);
+  const [galleryUrls, setGalleryUrls] = useState<string[]>([
+    DEMO_IMAGES.masterSuite,
+  ]);
   const [rules, setRules] = useState(
     'Não fumante. Check-in com documento oficial.'
   );
   const [feedback, setFeedback] = useState<string | null>(null);
+
+  const mediaUsage = useMemo(
+    () => calculateTenantMediaUsage(tenant, accommodations),
+    [tenant, accommodations]
+  );
 
   const openCreateModal = () => {
     setEditingAcc(null);
@@ -92,6 +105,7 @@ export const AccommodationsManagerView: React.FC<
     setDescription('');
     setAmenities('Ar-Condicionado, Wi-Fi 6, Café da Manhã, Frigobar');
     setImageUrl(DEMO_IMAGES.masterSuite);
+    setGalleryUrls([DEMO_IMAGES.masterSuite]);
     setRules('Respeitar horário de silêncio após 22h.');
     setIsCreating(true);
   };
@@ -117,7 +131,12 @@ export const AccommodationsManagerView: React.FC<
     setApplyRenumberOnEdit(detected.hasMixedPattern);
     setDescription(acc.description || '');
     setAmenities(acc.amenities || '');
-    setImageUrl(acc.imageUrl || DEMO_IMAGES.masterSuite);
+    const initialPhotos =
+      acc.galleryUrls && acc.galleryUrls.length > 0
+        ? acc.galleryUrls
+        : [acc.imageUrl || DEMO_IMAGES.masterSuite];
+    setImageUrl(initialPhotos[0]);
+    setGalleryUrls(initialPhotos.slice(0, 3));
     setRules(acc.rules || '');
     setIsCreating(true);
   };
@@ -157,6 +176,13 @@ export const AccommodationsManagerView: React.FC<
         .replace(/[^a-zA-Z0-9_-]/g, '_')
         .slice(0, 100);
 
+    const normalizedGallery = (
+      galleryUrls.length > 0 ? galleryUrls : [imageUrl || DEMO_IMAGES.masterSuite]
+    )
+      .map((u) => u.trim().slice(0, 180000))
+      .filter(Boolean)
+      .slice(0, 3);
+
     const accDoc: Accommodation = {
       id: accId,
       tenantId: tenant.id,
@@ -169,7 +195,8 @@ export const AccommodationsManagerView: React.FC<
       bedsCount: Number(bedsCount),
       description: description.trim().slice(0, 2000),
       amenities: amenities.trim().slice(0, 1000),
-      imageUrl: imageUrl.trim().slice(0, 500),
+      imageUrl: normalizedGallery[0] || DEMO_IMAGES.masterSuite,
+      galleryUrls: normalizedGallery,
       rules: rules.trim().slice(0, 800),
       active: editingAcc ? editingAcc.active : true,
       createdAt: editingAcc ? editingAcc.createdAt : nowIso,
@@ -496,6 +523,11 @@ export const AccommodationsManagerView: React.FC<
           Novo Modelo de Quarto
         </button>
       </div>
+
+      <CloudQuotaUsageBar
+        usage={mediaUsage}
+        planName={`Plano ${tenant.plan.toUpperCase()}`}
+      />
 
       {feedback && (
         <div className="animate-step-in p-3.5 rounded-lg bg-slate-900 text-white text-xs font-medium">
@@ -938,30 +970,15 @@ export const AccommodationsManagerView: React.FC<
                 </div>
 
                 <div className="sm:col-span-2">
-                  <label className="block font-semibold text-slate-700 mb-1">
-                    Fotografia Principal (Galeria / URL)
-                  </label>
-                  <select
-                    value={imageUrl}
-                    onChange={(e) => setImageUrl(e.target.value)}
-                    className="w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-900 bg-white"
-                  >
-                    <option value={DEMO_IMAGES.masterSuite}>
-                      Suíte Master Vista Mar (Fotografia Editorial)
-                    </option>
-                    <option value={DEMO_IMAGES.familyChalet}>
-                      Chalé / Quarto Familiar Madeira & Linho
-                    </option>
-                    <option value={DEMO_IMAGES.sharedDorm}>
-                      Dormitório Moderno com Camas Individuais
-                    </option>
-                    <option value={DEMO_IMAGES.singleStudio}>
-                      Quarto Studio Individual Executivo
-                    </option>
-                    <option value={DEMO_IMAGES.hero}>
-                      Arquitetura Panorâmica do Estabelecimento
-                    </option>
-                  </select>
+                  <RoomPhotosGalleryUploader
+                    photos={galleryUrls}
+                    onChangePhotos={(next) => {
+                      setGalleryUrls(next);
+                      if (next[0]) setImageUrl(next[0]);
+                    }}
+                    usage={mediaUsage}
+                    maxPhotosPerRoom={mediaUsage.quotaSpec.maxPhotosPerRoom}
+                  />
                 </div>
 
                 <div className="sm:col-span-2">

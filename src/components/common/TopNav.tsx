@@ -6,6 +6,7 @@ import {
   isColorLight,
 } from '../../constants/branding';
 import {EnvironmentView, useApp} from '../../context/AppContext';
+import {BrandLogo47} from './BrandLogo47';
 import {PWAInstallButton} from './PWAInstallButton';
 
 interface TopNavProps {
@@ -39,10 +40,8 @@ export const TopNav: React.FC<TopNavProps> = ({onOpenReservationLookup}) => {
     }
   };
 
-  const brandTitle =
-    environment === 'platform_admin' || !activeTenant
-      ? 'Digit4lKey StayOS'
-      : activeTenant.name;
+  const isPlatformBrand = environment === 'platform_admin' || !activeTenant;
+  const brandTitle = isPlatformBrand ? '47hospedagens' : activeTenant.name;
 
   const authenticatedLabel = firebaseUser?.email
     ? firebaseUser.email.split('@')[0]
@@ -86,35 +85,60 @@ export const TopNav: React.FC<TopNavProps> = ({onOpenReservationLookup}) => {
     >
       {/* Main Header Row */}
       <header className="max-w-[1440px] mx-auto h-16 flex items-center justify-between gap-3 px-4 sm:px-6">
-        {/* Zone 1: Brand Title — Prioritized width for establishment name */}
+        {/* Zone 1: Brand Title — Prioritized width for establishment name or 47hospedagens logo */}
         <div className="flex-1 min-w-0 flex items-center gap-2.5">
-          {isGuestThemed && !isImmersive && (
-            <span
-              className="w-2 h-5 rounded-full shrink-0"
-              style={{backgroundColor: brandColor}}
-            />
+          {isPlatformBrand ? (
+            <a
+              href="#/platform"
+              onClick={(e) => {
+                e.preventDefault();
+                handleSwitchEnvironment('platform_admin');
+              }}
+              title="47hospedagens"
+              className="inline-flex items-center min-w-0 transition-opacity duration-200 hover:opacity-85"
+            >
+              <BrandLogo47 size="md" />
+            </a>
+          ) : (
+            <>
+              {activeTenant?.logoUrl ? (
+                <div className="w-8 h-8 rounded-lg overflow-hidden border border-slate-200/60 bg-white shrink-0 shadow-2xs">
+                  <img
+                    src={activeTenant.logoUrl}
+                    alt={activeTenant.name}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              ) : (
+                isGuestThemed &&
+                !isImmersive && (
+                  <span
+                    className="w-2 h-5 rounded-full shrink-0"
+                    style={{backgroundColor: brandColor}}
+                  />
+                )
+              )}
+              <a
+                href={`#/s/${activeTenant.slug}`}
+                onClick={(e) => {
+                  e.preventDefault();
+                  handleSwitchEnvironment('guest_portal');
+                }}
+                title={brandTitle}
+                className={`text-base sm:text-lg lg:text-xl font-bold tracking-tight truncate transition-opacity duration-200 hover:opacity-85 ${
+                  isDark
+                    ? 'text-white'
+                    : isImmersive
+                    ? immersiveLightText
+                      ? 'text-white'
+                      : 'text-slate-900'
+                    : 'text-slate-900'
+                }`}
+              >
+                {brandTitle}
+              </a>
+            </>
           )}
-          <a
-            href={activeTenant ? `#/s/${activeTenant.slug}` : '#/platform'}
-            onClick={(e) => {
-              e.preventDefault();
-              handleSwitchEnvironment(
-                activeTenant ? 'guest_portal' : 'platform_admin'
-              );
-            }}
-            title={brandTitle}
-            className={`text-base sm:text-lg lg:text-xl font-bold tracking-tight truncate transition-opacity duration-200 hover:opacity-85 ${
-              isDark
-                ? 'text-white'
-                : isImmersive
-                ? immersiveLightText
-                  ? 'text-white'
-                  : 'text-slate-900'
-                : 'text-slate-900'
-            }`}
-          >
-            {brandTitle}
-          </a>
         </div>
 
         {/* Zone 2: Desktop Navigation */}

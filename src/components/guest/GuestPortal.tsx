@@ -2,6 +2,9 @@ import React, {useMemo, useState} from 'react';
 import {
   ArrowRight,
   Ban,
+  ChevronLeft,
+  ChevronRight,
+  Images,
   MapPin,
   MessageCircle,
   Phone,
@@ -21,6 +24,7 @@ import {
   PricingMode,
   Reservation,
 } from '../../types/models';
+import {BrandLogo47} from '../common/BrandLogo47';
 import {ResilientImage} from '../common/ResilientImage';
 import {BookingWizard} from './BookingWizard';
 
@@ -80,6 +84,9 @@ export const GuestPortal: React.FC<GuestPortalProps> = ({
 
   const [selectedAccommodation, setSelectedAccommodation] =
     useState<Accommodation | null>(null);
+  const [activePhotoIndexByAcc, setActivePhotoIndexByAcc] = useState<
+    Record<string, number>
+  >({});
 
   const handleSmoothScrollToCatalog = () => {
     setCatalogPulseKey((prev) => prev + 1);
@@ -116,9 +123,12 @@ export const GuestPortal: React.FC<GuestPortalProps> = ({
     return (
       <div className="animate-step-in max-w-lg mx-auto my-20 px-4">
         <div className="rounded-xl bg-white border border-slate-200 p-8 text-center space-y-5">
+          <div className="flex justify-center">
+            <BrandLogo47 size="lg" />
+          </div>
           <div className="space-y-2">
             <span className="text-xs font-mono uppercase text-slate-500">
-              Digit4lKey StayOS v2.0 · Infraestrutura Multi-Tenant
+              47hospedagens · Infraestrutura Multi-Tenant
             </span>
             <h1 className="text-xl font-bold text-slate-900">
               Plataforma de Reservas e Gestão de Hospedagem
@@ -166,8 +176,9 @@ export const GuestPortal: React.FC<GuestPortalProps> = ({
         </h1>
         <p className="text-sm text-slate-600">
           O estabelecimento <strong>{activeTenant.name}</strong> encontra-se com a
-          conta desativada/suspensa pelo Administrador Geral da plataforma
-          Digit4lKey StayOS. Novas reservas estão bloqueadas no momento.
+          conta desativada/suspensa pelo Administrador Geral da plataforma{' '}
+          <strong>47hospedagens</strong>. Novas reservas estão bloqueadas no
+          momento.
         </p>
       </div>
     );
@@ -257,19 +268,30 @@ export const GuestPortal: React.FC<GuestPortalProps> = ({
                   <span>Check-out {activeTenant.checkOutTime}</span>
                 </div>
 
-                <h1
-                  className={`text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight leading-tight ${
-                    isDark
-                      ? 'text-white'
-                      : isImmersive
-                      ? isColorLight(brandColor)
-                        ? 'text-slate-900'
-                        : 'text-white'
-                      : 'text-slate-900'
-                  }`}
-                >
-                  {activeTenant.name}
-                </h1>
+                <div className="flex items-center gap-3.5">
+                  {activeTenant.logoUrl && (
+                    <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl overflow-hidden border border-slate-200/60 bg-white shadow-sm shrink-0">
+                      <ResilientImage
+                        src={activeTenant.logoUrl}
+                        alt={activeTenant.name}
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  )}
+                  <h1
+                    className={`text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight leading-tight ${
+                      isDark
+                        ? 'text-white'
+                        : isImmersive
+                        ? isColorLight(brandColor)
+                          ? 'text-slate-900'
+                          : 'text-white'
+                        : 'text-slate-900'
+                    }`}
+                  >
+                    {activeTenant.name}
+                  </h1>
+                </div>
 
                 {activeTenant.tagline && (
                   <p
@@ -667,6 +689,16 @@ export const GuestPortal: React.FC<GuestPortalProps> = ({
               const isDorm =
                 acc.type.includes('dorm') || acc.pricingMode === 'per_bed';
 
+              const galleryList =
+                acc.galleryUrls && acc.galleryUrls.length > 0
+                  ? acc.galleryUrls
+                  : [acc.imageUrl].filter(Boolean);
+              const currentPhotoIdx =
+                (activePhotoIndexByAcc[acc.id] || 0) %
+                Math.max(1, galleryList.length);
+              const currentPhotoSrc =
+                galleryList[currentPhotoIdx] || acc.imageUrl;
+
               return (
                 <article
                   key={acc.id}
@@ -682,15 +714,57 @@ export const GuestPortal: React.FC<GuestPortalProps> = ({
                 >
                   <div>
                     <div
-                      className={`h-52 w-full overflow-hidden border-b ${
+                      className={`relative h-52 w-full overflow-hidden border-b ${
                         isDark ? 'border-slate-800' : 'border-slate-100'
                       }`}
                     >
                       <ResilientImage
-                        src={acc.imageUrl}
-                        alt={acc.name}
+                        src={currentPhotoSrc}
+                        alt={`${acc.name} - Foto ${currentPhotoIdx + 1}`}
                         className="w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.04]"
                       />
+
+                      {galleryList.length > 1 && (
+                        <>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setActivePhotoIndexByAcc((prev) => ({
+                                ...prev,
+                                [acc.id]:
+                                  (currentPhotoIdx - 1 + galleryList.length) %
+                                  galleryList.length,
+                              }));
+                            }}
+                            title="Foto anterior"
+                            className="guest-btn-transition absolute left-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-slate-900/70 text-white flex items-center justify-center hover:bg-slate-900 shadow-sm"
+                          >
+                            <ChevronLeft className="w-4 h-4" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setActivePhotoIndexByAcc((prev) => ({
+                                ...prev,
+                                [acc.id]:
+                                  (currentPhotoIdx + 1) % galleryList.length,
+                              }));
+                            }}
+                            title="Próxima foto"
+                            className="guest-btn-transition absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-slate-900/70 text-white flex items-center justify-center hover:bg-slate-900 shadow-sm"
+                          >
+                            <ChevronRight className="w-4 h-4" />
+                          </button>
+                          <div className="absolute bottom-2.5 right-2.5 px-2 py-0.5 rounded-md bg-slate-900/75 text-white text-[10px] font-mono inline-flex items-center gap-1 backdrop-blur-xs">
+                            <Images className="w-3 h-3" />
+                            <span>
+                              {currentPhotoIdx + 1}/{galleryList.length}
+                            </span>
+                          </div>
+                        </>
+                      )}
                     </div>
 
                     <div className="p-5 space-y-2.5">

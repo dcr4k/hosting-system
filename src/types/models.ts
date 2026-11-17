@@ -100,6 +100,7 @@ export interface Accommodation {
   description?: string;
   amenities?: string; // Comma-separated amenities
   imageUrl?: string;
+  galleryUrls?: string[]; // Up to 3 compressed photos per accommodation
   rules?: string;
   active: boolean;
   createdAt: string;

@@ -14,8 +14,8 @@ export default defineConfig(() => {
         includeAssets: ['icon.svg'],
         manifest: {
           id: '/',
-          name: 'Digit4lKey StayOS — Gestão e Reservas Multi-Tenant',
-          short_name: 'StayOS',
+          name: '47hospedagens — Gestão e Reservas Multi-Tenant',
+          short_name: '47hospedagens',
           description: 'Plataforma SaaS multiestabelecimento de reservas e gestão de hospedagem.',
           theme_color: '#0f172a',
           background_color: '#f8fafc',

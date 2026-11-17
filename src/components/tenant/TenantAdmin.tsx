@@ -29,7 +29,13 @@ import {
   Tenant,
   TenantThemeVariant,
 } from '../../types/models';
+import {calculateTenantMediaUsage} from '../../utils/imageOptimizer';
+import {
+  CloudQuotaUsageBar,
+  SingleCloudMediaUploader,
+} from '../common/CloudMediaUploader';
 import {LocationUfCitySelector} from '../common/LocationUfCitySelector';
+import {ResilientImage} from '../common/ResilientImage';
 import {ThemePaletteSelector} from '../common/ThemePaletteSelector';
 import {AccommodationsManagerView} from './AccommodationsManagerView';
 import {AvailabilityCalendarView} from './AvailabilityCalendarView';
@@ -82,6 +88,7 @@ export const TenantAdmin: React.FC = () => {
   const [description, setDescription] = useState(
     activeTenant?.description || ''
   );
+  const [logoUrl, setLogoUrl] = useState(activeTenant?.logoUrl || '');
   const [heroImageUrl, setHeroImageUrl] = useState(
     activeTenant?.heroImageUrl || DEMO_IMAGES.hero
   );
@@ -111,6 +118,7 @@ export const TenantAdmin: React.FC = () => {
     setThemeVariant(activeTenant.themeVariant || 'classic_light');
     setTagline(activeTenant.tagline || '');
     setDescription(activeTenant.description || '');
+    setLogoUrl(activeTenant.logoUrl || '');
     setHeroImageUrl(activeTenant.heroImageUrl || DEMO_IMAGES.hero);
     setPhone(activeTenant.phone || '');
     setWhatsapp(activeTenant.whatsapp || '');
@@ -349,7 +357,8 @@ export const TenantAdmin: React.FC = () => {
       themeVariant,
       tagline: tagline.trim().slice(0, 240),
       description: description.trim().slice(0, 2000),
-      heroImageUrl: heroImageUrl.trim().slice(0, 500),
+      logoUrl: logoUrl.trim().slice(0, 115000),
+      heroImageUrl: heroImageUrl.trim().slice(0, 210000),
       phone: phone.trim().slice(0, 40),
       whatsapp: whatsapp.trim().slice(0, 40),
       address: address.trim().slice(0, 300),
@@ -414,16 +423,34 @@ export const TenantAdmin: React.FC = () => {
         {/* Left Sidebar Navigation (248px) */}
         <aside className="w-full lg:w-60 bg-white border-b lg:border-b-0 lg:border-r border-slate-200 shrink-0 p-4 flex flex-col justify-between">
           <div className="space-y-5">
-            <div className="px-2 py-1">
-              <span className="text-[11px] font-mono uppercase text-slate-400 block">
-                Ambiente B · Gestão
-              </span>
-              <h2 className="text-sm font-bold text-slate-900 truncate mt-0.5">
-                {activeTenant.name}
-              </h2>
-              <p className="text-xs text-slate-500 font-mono mt-0.5 truncate">
-                /{activeTenant.slug} · {activeRole}
-              </p>
+            <div className="px-2 py-1 flex items-center gap-2.5">
+              {activeTenant.logoUrl ? (
+                <div className="w-10 h-10 rounded-lg border border-slate-200 overflow-hidden bg-slate-100 shrink-0">
+                  <ResilientImage
+                    src={activeTenant.logoUrl}
+                    alt={activeTenant.name}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              ) : (
+                <div
+                  style={{backgroundColor: activeTenant.primaryColor}}
+                  className="w-10 h-10 rounded-lg flex items-center justify-center text-white font-bold text-sm shrink-0"
+                >
+                  {activeTenant.name.slice(0, 2).toUpperCase()}
+                </div>
+              )}
+              <div className="min-w-0">
+                <span className="text-[10px] font-mono uppercase text-slate-400 block">
+                  Ambiente B · Gestão
+                </span>
+                <h2 className="text-sm font-bold text-slate-900 truncate">
+                  {activeTenant.name}
+                </h2>
+                <p className="text-[11px] text-slate-500 font-mono truncate">
+                  /{activeTenant.slug}
+                </p>
+              </div>
             </div>
 
             <nav className="flex lg:flex-col gap-1 overflow-x-auto pb-1 lg:pb-0 text-xs font-medium">
@@ -1054,6 +1081,55 @@ export const TenantAdmin: React.FC = () => {
                   value={brandName}
                   onChange={(e) => setBrandName(e.target.value)}
                   className="h-10 w-full rounded-lg border border-slate-300 px-3 text-slate-900"
+                />
+              </div>
+
+              <div className="sm:col-span-2">
+                <CloudQuotaUsageBar
+                  usage={calculateTenantMediaUsage(
+                    {
+                      ...activeTenant,
+                      logoUrl,
+                      heroImageUrl,
+                    },
+                    accommodations
+                  )}
+                  planName={activeTenant.plan.toUpperCase()}
+                />
+              </div>
+
+              <div className="sm:col-span-2 grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <SingleCloudMediaUploader
+                  label="Logotipo / Foto de Perfil do Gestor e Estabelecimento"
+                  helperText="Exibido no topo do portal de reservas, barra lateral do gestor e comprovantes."
+                  role="logo"
+                  value={logoUrl}
+                  onChange={setLogoUrl}
+                  usage={calculateTenantMediaUsage(
+                    {
+                      ...activeTenant,
+                      logoUrl,
+                      heroImageUrl,
+                    },
+                    accommodations
+                  )}
+                  fallbackText={brandName || activeTenant.name}
+                />
+
+                <SingleCloudMediaUploader
+                  label="Fotografia de Capa (Banner Principal do Portal)"
+                  helperText="Imagem de destaque exibida na abertura do portal exclusivo do estabelecimento."
+                  role="hero"
+                  value={heroImageUrl}
+                  onChange={setHeroImageUrl}
+                  usage={calculateTenantMediaUsage(
+                    {
+                      ...activeTenant,
+                      logoUrl,
+                      heroImageUrl,
+                    },
+                    accommodations
+                  )}
                 />
               </div>
 

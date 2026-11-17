@@ -63,7 +63,7 @@ export const SAAS_PLANS: SaaSPlanSpec[] = [
       'Tudo do Plano Profissional',
       'Múltiplas Unidades e Auditoria Completa de Operações',
       'Preparação para Domínio Personalizado e Webhooks PIX/Cartão',
-      'SLA Prioritário Digit4lKey',
+      'SLA Prioritário 47hospedagens',
     ],
   },
 ];

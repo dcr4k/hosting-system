@@ -4,6 +4,7 @@
  */
 
 import React, {useState} from 'react';
+import {BrandLogo47} from './components/common/BrandLogo47';
 import {OfflineBanner} from './components/common/OfflineBanner';
 import {TopNav} from './components/common/TopNav';
 import {GuestPortal} from './components/guest/GuestPortal';
@@ -111,9 +112,13 @@ const MainRouter: React.FC = () => {
             </>
           ) : (
             <>
-              <div>
-                <strong>Digit4lKey StayOS v2.0</strong> — Plataforma SaaS
-                Multiestabelecimento de Reservas e Gestão de Hospedagem
+              <div className="flex items-center gap-2.5">
+                <BrandLogo47 size="sm" showText={false} />
+                <div>
+                  <strong className="text-slate-900">47hospedagens</strong> —
+                  Plataforma SaaS Multiestabelecimento de Reservas e Gestão de
+                  Hospedagem
+                </div>
               </div>
               <div className="flex items-center gap-4">
                 <span>Isolamento Multi-Tenant Cloud Firestore</span>

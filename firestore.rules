@@ -56,6 +56,8 @@ service cloud.firestore {
       data.ownerUid is string && data.ownerUid.size() <= 128 &&
       data.primaryColor is string && data.primaryColor.size() <= 32 &&
       (!('themeVariant' in data) || data.themeVariant in ['classic_light', 'resort_tint', 'boutique_dark']) &&
+      (!('logoUrl' in data) || (data.logoUrl is string && data.logoUrl.size() <= 120000)) &&
+      (!('heroImageUrl' in data) || (data.heroImageUrl is string && data.heroImageUrl.size() <= 220000)) &&
       data.checkInTime is string && data.checkInTime.size() <= 16 &&
       data.checkOutTime is string && data.checkOutTime.size() <= 16 &&
       data.createdAt is string && data.createdAt.size() <= 64;
@@ -80,7 +82,7 @@ service cloud.firestore {
       data.keys().hasOnly([
         'id', 'tenantId', 'name', 'type', 'pricingMode',
         'basePrice', 'weekendPrice', 'capacity', 'bedsCount',
-        'description', 'amenities', 'imageUrl', 'rules', 'active', 'createdAt'
+        'description', 'amenities', 'imageUrl', 'galleryUrls', 'rules', 'active', 'createdAt'
       ]) &&
       data.id is string && data.id.size() <= 128 &&
       data.tenantId is string && data.tenantId.size() <= 128 &&
@@ -90,6 +92,8 @@ service cloud.firestore {
       data.basePrice is number && data.basePrice >= 0 &&
       data.capacity is number && data.capacity >= 1 &&
       data.bedsCount is number && data.bedsCount >= 1 &&
+      (!('imageUrl' in data) || (data.imageUrl is string && data.imageUrl.size() <= 220000)) &&
+      (!('galleryUrls' in data) || (data.galleryUrls is list && data.galleryUrls.size() <= 3)) &&
       data.active is bool &&
       data.createdAt is string && data.createdAt.size() <= 64;
     }

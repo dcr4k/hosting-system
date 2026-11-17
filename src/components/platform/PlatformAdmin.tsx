@@ -8,12 +8,15 @@ import {
   EyeOff,
   ExternalLink,
   KeyRound,
+  LayoutGrid,
+  List,
   Lock,
   LogIn,
+  Pencil,
   Plus,
   Power,
   RefreshCw,
-  ShieldCheck,
+  Search,
   Trash2,
   X,
 } from 'lucide-react';
@@ -34,6 +37,7 @@ import {
   TenantCategory,
   TenantThemeVariant,
 } from '../../types/models';
+import {BrandLogo47} from '../common/BrandLogo47';
 import {LocationUfCitySelector} from '../common/LocationUfCitySelector';
 import {ThemePaletteSelector} from '../common/ThemePaletteSelector';
 
@@ -60,6 +64,25 @@ export const PlatformAdmin: React.FC = () => {
   const [visiblePasswords, setVisiblePasswords] = useState<
     Record<string, boolean>
   >({});
+  const [viewMode, setViewMode] = useState<'detailed' | 'compact'>(() => {
+    try {
+      const saved = localStorage.getItem('47h_platform_view_mode');
+      if (saved === 'compact' || saved === 'detailed') return saved;
+    } catch {
+      // ignore storage errors
+    }
+    return 'compact';
+  });
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const handleSelectViewMode = (mode: 'detailed' | 'compact') => {
+    setViewMode(mode);
+    try {
+      localStorage.setItem('47h_platform_view_mode', mode);
+    } catch {
+      // ignore storage errors
+    }
+  };
 
   // Edit Owner Credentials Modal State
   const [editingCredsTenant, setEditingCredsTenant] = useState<Tenant | null>(
@@ -113,6 +136,19 @@ export const PlatformAdmin: React.FC = () => {
     };
   }, [tenants]);
 
+  const filteredTenants = useMemo(() => {
+    if (!searchQuery.trim()) return tenants;
+    const q = searchQuery.toLowerCase().trim();
+    return tenants.filter(
+      (t) =>
+        t.name.toLowerCase().includes(q) ||
+        t.slug.toLowerCase().includes(q) ||
+        (t.city || '').toLowerCase().includes(q) ||
+        (t.state || '').toLowerCase().includes(q) ||
+        (t.ownerEmail || '').toLowerCase().includes(q)
+    );
+  }, [tenants, searchQuery]);
+
   const handleCopyText = async (text: string, key: string) => {
     try {
       await navigator.clipboard.writeText(text);
@@ -144,12 +180,12 @@ export const PlatformAdmin: React.FC = () => {
     return (
       <div className="max-w-lg mx-auto my-16 px-4">
         <div className="rounded-xl bg-white border border-slate-200 p-8 text-center space-y-5">
-          <div className="w-12 h-12 rounded-xl bg-slate-900 flex items-center justify-center mx-auto">
-            <Lock className="w-6 h-6 text-white" />
+          <div className="flex justify-center">
+            <BrandLogo47 size="lg" />
           </div>
           <div className="space-y-2">
             <span className="text-xs font-mono uppercase text-slate-500">
-              Ambiente A · Governança Central do SaaS
+              Ambiente A · Governança Central 47hospedagens
             </span>
             <h1 className="text-xl font-bold text-slate-900">
               Acesso Exclusivo do Administrador Geral
@@ -311,14 +347,17 @@ export const PlatformAdmin: React.FC = () => {
       <div className="max-w-[1440px] mx-auto space-y-8">
         {/* Header */}
         <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 pb-5">
-          <div className="min-w-0">
-            <span className="text-xs font-mono uppercase text-slate-500 block">
-              Ambiente A · Administração Central do SaaS (Exclusivo
-              digit4lkey@gmail.com)
-            </span>
-            <h1 className="text-xl sm:text-2xl font-bold text-slate-900 mt-0.5">
-              Gestão de Estabelecimentos, Links Exclusivos e Credenciais dos Proprietários
-            </h1>
+          <div className="min-w-0 flex items-center gap-3.5">
+            <BrandLogo47 size="lg" showText={false} />
+            <div className="min-w-0">
+              <span className="text-xs font-mono uppercase text-slate-500 block">
+                Ambiente A · 47hospedagens · Administração Central (Exclusivo
+                digit4lkey@gmail.com)
+              </span>
+              <h1 className="text-xl sm:text-2xl font-bold text-slate-900 mt-0.5 truncate">
+                Gestão de Estabelecimentos, Links Exclusivos e Credenciais dos Proprietários
+              </h1>
+            </div>
           </div>
 
           <button
@@ -388,18 +427,62 @@ export const PlatformAdmin: React.FC = () => {
 
         {/* Clients / Establishments List */}
         <div className="rounded-xl bg-white border border-slate-200 overflow-hidden">
-          <div className="px-5 py-4 border-b border-slate-200 flex flex-wrap items-center justify-between gap-2 bg-slate-50/70">
-            <div className="flex items-center gap-2">
+          <div className="px-5 py-4 border-b border-slate-200 flex flex-wrap items-center justify-between gap-3 bg-slate-50/70">
+            <div className="flex items-center gap-2 min-w-0">
               <Building2 className="w-4 h-4 text-slate-500 shrink-0" />
-              <h2 className="text-sm font-bold text-slate-900">
+              <h2 className="text-sm font-bold text-slate-900 truncate">
                 Estabelecimentos, Links Exclusivos e Acesso (E-mail + Senha) dos Proprietários
               </h2>
-            </div>
-            <div className="flex items-center gap-1.5 text-xs text-slate-500">
-              <ShieldCheck className="w-4 h-4 text-emerald-700 shrink-0" />
-              <span>
-                Cada estabelecimento possui link de hóspede e painel de controle com login próprio
+              <span className="text-xs font-mono text-slate-500 shrink-0">
+                ({filteredTenants.length})
               </span>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2.5">
+              {tenants.length > 0 && (
+                <div className="relative">
+                  <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2 pointer-events-none" />
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="Buscar local, cidade ou e-mail..."
+                    className="h-8 w-48 sm:w-56 rounded-lg border border-slate-300 bg-white pl-8 pr-2.5 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900"
+                  />
+                </div>
+              )}
+
+              {/* View Mode Switcher: Lista Simplificada vs Visão Detalhada */}
+              <div
+                role="group"
+                aria-label="Modo de exibição dos estabelecimentos"
+                className="inline-flex items-center p-0.5 rounded-lg bg-slate-200/80 border border-slate-300/80 text-xs"
+              >
+                <button
+                  type="button"
+                  onClick={() => handleSelectViewMode('compact')}
+                  className={`h-7 px-2.5 rounded-md inline-flex items-center gap-1.5 font-semibold transition-all ${
+                    viewMode === 'compact'
+                      ? 'bg-white text-slate-900 shadow-2xs'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  <List className="w-3.5 h-3.5 shrink-0" />
+                  <span>Lista Simplificada</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleSelectViewMode('detailed')}
+                  className={`h-7 px-2.5 rounded-md inline-flex items-center gap-1.5 font-semibold transition-all ${
+                    viewMode === 'detailed'
+                      ? 'bg-white text-slate-900 shadow-2xs'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  <LayoutGrid className="w-3.5 h-3.5 shrink-0" />
+                  <span>Cards Detalhados</span>
+                </button>
+              </div>
             </div>
           </div>
 
@@ -427,9 +510,282 @@ export const PlatformAdmin: React.FC = () => {
                 <span>Cadastrar Primeiro Estabelecimento</span>
               </button>
             </div>
+          ) : filteredTenants.length === 0 ? (
+            <div className="p-8 text-center space-y-2 text-xs text-slate-600">
+              <p>
+                Nenhum estabelecimento encontrado para{' '}
+                <strong>"{searchQuery}"</strong>.
+              </p>
+              <button
+                type="button"
+                onClick={() => setSearchQuery('')}
+                className="h-8 px-3 rounded-lg bg-slate-900 text-white font-semibold"
+              >
+                Limpar Busca
+              </button>
+            </div>
+          ) : viewMode === 'compact' ? (
+            /* MODO LISTA SIMPLIFICADA (Compact Table View with 100% of functionalities) */
+            <div className="w-full overflow-x-auto">
+              <table className="w-full text-left border-collapse text-xs">
+                <thead>
+                  <tr className="bg-slate-50 border-b border-slate-200 text-slate-600">
+                    <th className="py-3 px-4 font-semibold whitespace-nowrap">
+                      Estabelecimento & Local
+                    </th>
+                    <th className="py-3 px-4 font-semibold whitespace-nowrap">
+                      Status & Plano
+                    </th>
+                    <th className="py-3 px-4 font-semibold whitespace-nowrap">
+                      Link Exclusivo (Hóspede)
+                    </th>
+                    <th className="py-3 px-4 font-semibold whitespace-nowrap">
+                      Acesso do Dono (E-mail / Senha)
+                    </th>
+                    <th className="py-3 px-4 font-semibold text-right whitespace-nowrap">
+                      Ações & Governança
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-200">
+                  {filteredTenants.map((t) => {
+                    const guestUrl = getGuestPortalUrl(t.slug);
+                    const adminUrl = getTenantAdminUrl(t.slug);
+                    const showPass = !!visiblePasswords[t.id];
+                    const accessKitText = [
+                      `Estabelecimento: ${t.name}`,
+                      `Link Público de Reservas (Hóspede): ${guestUrl}`,
+                      `Link do Painel de Controle (Gestor): ${adminUrl}`,
+                      `E-mail de Acesso: ${t.ownerEmail || ''}`,
+                      `Senha de Acesso: ${t.ownerPassword || '(não definida)'}`,
+                    ].join('\n');
+
+                    return (
+                      <tr
+                        key={t.id}
+                        className="hover:bg-slate-50/80 transition-colors align-middle"
+                      >
+                        {/* 1. Establishment & Location */}
+                        <td className="py-3 px-4">
+                          <div className="flex items-center gap-2.5 min-w-[180px]">
+                            <span
+                              className="w-3.5 h-3.5 rounded-sm shrink-0 border border-black/10"
+                              style={{backgroundColor: t.primaryColor}}
+                            />
+                            <div className="min-w-0">
+                              <div className="font-bold text-slate-900 truncate">
+                                {t.name}
+                              </div>
+                              <div className="text-[11px] text-slate-500 truncate">
+                                <span className="capitalize">{t.category}</span>{' '}
+                                · {t.city}/{t.state}
+                              </div>
+                            </div>
+                          </div>
+                        </td>
+
+                        {/* 2. Status & Commercial Plan */}
+                        <td className="py-3 px-4 whitespace-nowrap">
+                          <div className="flex items-center gap-2">
+                            <span
+                              className={`font-mono uppercase text-[10px] font-bold px-1.5 py-0.5 rounded ${
+                                t.status === 'active'
+                                  ? 'text-emerald-700 bg-emerald-50 border border-emerald-200'
+                                  : 'text-red-700 bg-red-50 border border-red-200'
+                              }`}
+                            >
+                              {t.status === 'active' ? 'ATIVO' : 'SUSPENSO'}
+                            </span>
+
+                            <select
+                              value={t.plan}
+                              onChange={(e) =>
+                                handleChangePlan(
+                                  t,
+                                  e.target.value as SaaSPlanId
+                                )
+                              }
+                              aria-label={`Plano de ${t.name}`}
+                              className="h-7 rounded border border-slate-300 bg-white px-2 font-semibold text-slate-800 text-[11px]"
+                            >
+                              <option value="starter">Inicial (R$ 189)</option>
+                              <option value="pro">Profissional (R$ 389)</option>
+                              <option value="enterprise">
+                                Avançado (R$ 749)
+                              </option>
+                            </select>
+                          </div>
+                        </td>
+
+                        {/* 3. Guest Link */}
+                        <td className="py-3 px-4 whitespace-nowrap">
+                          <div className="inline-flex items-center gap-1.5">
+                            <code className="font-mono text-[11px] bg-slate-100 border border-slate-200 px-2 py-0.5 rounded text-slate-800">
+                              #/s/{t.slug}
+                            </code>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                handleCopyText(guestUrl, `guest_${t.id}`)
+                              }
+                              title="Copiar Link do Hóspede"
+                              className="h-7 inline-flex items-center gap-1 px-2 rounded border border-slate-300 bg-white text-slate-700 hover:bg-slate-100 font-semibold"
+                            >
+                              {copiedLinkKey === `guest_${t.id}` ? (
+                                <>
+                                  <Check className="w-3 h-3 text-emerald-700" />
+                                  <span className="text-emerald-700">
+                                    Copiado
+                                  </span>
+                                </>
+                              ) : (
+                                <>
+                                  <Copy className="w-3 h-3" />
+                                  <span>Copiar</span>
+                                </>
+                              )}
+                            </button>
+                          </div>
+                        </td>
+
+                        {/* 4. Owner Credentials (E-mail + Password + Edit + Kit) */}
+                        <td className="py-3 px-4 whitespace-nowrap">
+                          <div className="inline-flex items-center gap-1.5">
+                            <div className="font-mono text-[11px] bg-slate-100 border border-slate-200 px-2 py-0.5 rounded text-slate-900">
+                              <span>{t.ownerEmail || '—'}</span>
+                              <span className="text-slate-400 mx-1.5">|</span>
+                              <span className="font-semibold">
+                                {t.ownerPassword
+                                  ? showPass
+                                    ? t.ownerPassword
+                                    : '••••••••'
+                                  : 'Sem senha'}
+                              </span>
+                            </div>
+
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setVisiblePasswords((prev) => ({
+                                  ...prev,
+                                  [t.id]: !prev[t.id],
+                                }))
+                              }
+                              title={showPass ? 'Ocultar senha' : 'Ver senha'}
+                              className="h-7 w-7 inline-flex items-center justify-center rounded border border-slate-200 bg-white text-slate-600 hover:bg-slate-100"
+                            >
+                              {showPass ? (
+                                <EyeOff className="w-3.5 h-3.5" />
+                              ) : (
+                                <Eye className="w-3.5 h-3.5" />
+                              )}
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setEditingCredsTenant(t);
+                                setEditEmail(
+                                  t.ownerEmail || `gestor@${t.slug}.com.br`
+                                );
+                                setEditPassword(
+                                  t.ownerPassword || generateOwnerPassword()
+                                );
+                              }}
+                              title="Alterar E-mail e Senha do Dono"
+                              className="h-7 px-2 inline-flex items-center gap-1 rounded border border-slate-300 bg-white text-slate-700 hover:bg-slate-100 font-medium"
+                            >
+                              <Pencil className="w-3 h-3" />
+                              <span>Editar</span>
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() =>
+                                handleCopyText(accessKitText, `kit_${t.id}`)
+                              }
+                              title="Copiar Kit de Acesso Completo (Links + Login + Senha)"
+                              className="h-7 px-2.5 inline-flex items-center gap-1 rounded bg-slate-900 text-white hover:bg-slate-800 font-semibold"
+                            >
+                              {copiedLinkKey === `kit_${t.id}` ? (
+                                <>
+                                  <Check className="w-3 h-3 text-emerald-400" />
+                                  <span>Kit Copiado</span>
+                                </>
+                              ) : (
+                                <>
+                                  <Copy className="w-3 h-3" />
+                                  <span>Kit</span>
+                                </>
+                              )}
+                            </button>
+                          </div>
+                        </td>
+
+                        {/* 5. Quick Actions */}
+                        <td className="py-3 px-4 text-right whitespace-nowrap">
+                          <div className="inline-flex items-center justify-end gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() => navigateToTenantPortal(t.slug)}
+                              title="Abrir Portal Público do Hóspede"
+                              className="h-7 inline-flex items-center gap-1 px-2.5 rounded border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 font-semibold"
+                            >
+                              <ExternalLink className="w-3 h-3 shrink-0" />
+                              <span>Portal</span>
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => navigateToTenantAdmin(t.slug)}
+                              title="Abrir Painel de Controle do Gestor"
+                              className="h-7 px-2.5 rounded border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 font-semibold"
+                            >
+                              Painel
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => handleToggleTenantStatus(t)}
+                              title={
+                                t.status === 'active'
+                                  ? 'Desativar Estabelecimento'
+                                  : 'Reativar Estabelecimento'
+                              }
+                              className={`h-7 inline-flex items-center gap-1 px-2.5 rounded font-semibold ${
+                                t.status === 'active'
+                                  ? 'border border-amber-300 bg-amber-50 text-amber-900 hover:bg-amber-100'
+                                  : 'bg-emerald-700 text-white hover:bg-emerald-800'
+                              }`}
+                            >
+                              <Power className="w-3 h-3 shrink-0" />
+                              <span>
+                                {t.status === 'active'
+                                  ? 'Desativar'
+                                  : 'Reativar'}
+                              </span>
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => setTenantToDelete(t)}
+                              title="Remover Estabelecimento"
+                              className="h-7 w-7 inline-flex items-center justify-center rounded border border-red-200 text-red-700 hover:bg-red-50"
+                            >
+                              <Trash2 className="w-3.5 h-3.5 shrink-0" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
           ) : (
+            /* MODO CARDS DETALHADOS (Original Detailed View) */
             <div className="divide-y divide-slate-200">
-              {tenants.map((t) => {
+              {filteredTenants.map((t) => {
                 const guestUrl = getGuestPortalUrl(t.slug);
                 const adminUrl = getTenantAdminUrl(t.slug);
                 const showPass = !!visiblePasswords[t.id];
